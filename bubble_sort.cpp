@@ -21,7 +21,6 @@ void sequentialBubbleSort(int *a, int n)
                 swapped = 1;
             }
         }
-
         if (!swapped)
             break;
     }
@@ -33,9 +32,9 @@ void parallelBubbleSort(int *a, int n)
     for (int i = 0; i < n; i++)
     {
         swapped = 0;
-        int first=i%2;
-#pragma omp parallel for shared(a,first)
-        for (int j = first; j < n - 1; j++)
+        int first = i % 2;
+#pragma omp parallel for shared(a, first)
+        for (int j = first; j < n - 1; j += 2)
         {
             if (a[j] > a[j + 1])
             {
@@ -43,7 +42,6 @@ void parallelBubbleSort(int *a, int n)
                 swapped = 1;
             }
         }
-
         if (!swapped)
             break;
     }
@@ -51,29 +49,31 @@ void parallelBubbleSort(int *a, int n)
 
 void swap(int &a, int &b)
 {
-    int test;
-    test = a;
+    int test = a;
     a = b;
     b = test;
 }
 
 int main()
 {
-    int *a, n;
+    int *a, *b, n;
     cout << "\n enter total no of elements=>";
     cin >> n;
     a = new int[n];
+    b = new int[n]; // Allocate a second array for parallel sort
+
     cout << "\n enter elements=>";
     for (int i = 0; i < n; i++)
     {
         cin >> a[i];
+        b[i] = a[i]; // Copy original elements for parallel sort
     }
 
-    double start_time = omp_get_wtime(); // start timer for sequential algorithm
+    double start_time = omp_get_wtime();
     sequentialBubbleSort(a, n);
-    double end_time = omp_get_wtime(); // end timer for sequential algorithm
+    double end_time = omp_get_wtime();
 
-    cout << "\n sorted array is=>";
+    cout << "\n sorted array by sequential=>";
     for (int i = 0; i < n; i++)
     {
         cout << a[i] << endl;
@@ -81,19 +81,20 @@ int main()
 
     cout << "Time taken by sequential algorithm: " << end_time - start_time << " seconds" << endl;
 
-    start_time = omp_get_wtime(); // start timer for parallel algorithm
-    parallelBubbleSort(a, n);
-    end_time = omp_get_wtime(); // end timer for parallel algorithm
+    start_time = omp_get_wtime();
+    parallelBubbleSort(b, n);
+    end_time = omp_get_wtime();
 
-    cout << "\n sorted array is=>";
+    cout << "\n sorted array by parallel=>";
     for (int i = 0; i < n; i++)
     {
-        cout << a[i] << endl;
+        cout << b[i] << endl;
     }
 
     cout << "Time taken by parallel algorithm: " << end_time - start_time << " seconds" << endl;
 
-    delete[] a; // Don't forget to free the allocated memory
+    delete[] a;
+    delete[] b;
 
     return 0;
 }
