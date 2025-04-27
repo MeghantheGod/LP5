@@ -1,5 +1,4 @@
-%%writefile mul.cu
-
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include <iostream>
 
@@ -19,18 +18,26 @@ __global__ void matmul(int* A, int* B, int* C, int N) {
 int main() {
     int N = 512;
     int size = N * N * sizeof(int);
-    int *A, *B, *C;
-    int *dev_A, *dev_B, *dev_C;
+    int *A = nullptr, *B = nullptr, *C = nullptr;
+    int *dev_A = nullptr, *dev_B = nullptr, *dev_C = nullptr;
 
-    // Allocate pinned memory on host for better performance
-    cudaMallocHost((void**)&A, size);
-    cudaMallocHost((void**)&B, size);
-    cudaMallocHost((void**)&C, size);
+    // Allocate pinned memory on host
+    if (cudaMallocHost((void**)&A, size) != cudaSuccess ||
+        cudaMallocHost((void**)&B, size) != cudaSuccess ||
+        cudaMallocHost((void**)&C, size) != cudaSuccess) 
+    {
+        std::cerr << "Failed to allocate pinned host memory!" << std::endl;
+        return -1;
+    }
 
     // Allocate memory on device
-    cudaMalloc((void**)&dev_A, size);
-    cudaMalloc((void**)&dev_B, size);
-    cudaMalloc((void**)&dev_C, size);
+    if (cudaMalloc((void**)&dev_A, size) != cudaSuccess ||
+        cudaMalloc((void**)&dev_B, size) != cudaSuccess ||
+        cudaMalloc((void**)&dev_C, size) != cudaSuccess) 
+    {
+        std::cerr << "Failed to allocate device memory!" << std::endl;
+        return -1;
+    }
 
     // Initialize matrices A and B
     for (int i = 0; i < N; i++) {
@@ -50,6 +57,9 @@ int main() {
 
     // Launch kernel
     matmul<<<dimGrid, dimBlock>>>(dev_A, dev_B, dev_C, N);
+
+    // Synchronize to wait for kernel completion
+    cudaDeviceSynchronize();
 
     // Copy result back to host
     cudaMemcpy(C, dev_C, size, cudaMemcpyDeviceToHost);
